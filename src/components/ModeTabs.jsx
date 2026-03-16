@@ -3,6 +3,7 @@ import Button from './Button'
 const TABS = [
   { id: 'hotfix', label: 'hotfix' },
   { id: 'newbranch', label: 'new-branch' },
+  { id: 'delbranch', label: 'del-branch' },
 ]
 
 export default function ModeTabs({ mode, onSwitch, disabled }) {

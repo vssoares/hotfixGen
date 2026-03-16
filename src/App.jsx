@@ -6,6 +6,7 @@ import ProjectSelector from './components/ProjectSelector'
 import ModeTabs from './components/ModeTabs'
 import HotfixPanel from './components/HotfixPanel'
 import NewBranchPanel from './components/NewBranchPanel'
+import DeleteBranchPanel from './components/DeleteBranchPanel'
 import ConsoleOutput from './components/ConsoleOutput'
 import Button from './components/Button'
 
@@ -24,6 +25,7 @@ export default function App() {
   const [branchType, setBranchType] = useState('sustentacao')
   const [branchUs, setBranchUs] = useState('')
   const [branchName, setBranchName] = useState('')
+  const [deleteBranchName, setDeleteBranchName] = useState('')
   const [lines, setLines] = useState([])
   const [running, setRunning] = useState(false)
 
@@ -71,10 +73,20 @@ export default function App() {
   function handleModeSwitch(newMode) {
     if (running) return
     setMode(newMode)
-    if (newMode === 'newbranch') {
+    if (newMode === 'newbranch' || newMode === 'delbranch') {
       setSelectedAction(null)
       setVersion('')
     }
+  }
+
+  async function handleDeleteBranch() {
+    if (!selectedProject || !deleteBranchName.trim() || running) return
+    const projectPath = getProjectPath(selectedProject)
+    setLines([{ text: `> [${selectedProject}] git branch -D ${deleteBranchName.trim()}`, type: 'system' }])
+    setupListeners()
+    await window.api.run('delete-branch', '', projectPath, {
+      branchName: deleteBranchName.trim(),
+    })
   }
 
   function handleProjectClick(project) {
@@ -186,6 +198,23 @@ export default function App() {
                 onNameChange={setBranchName}
                 branchPreview={branchPreview}
                 onCreateBranch={handleCreateBranch}
+                running={running}
+                disabled={!selectedProject}
+              />
+            </motion.div>
+          )}
+
+          {mode === 'delbranch' && (
+            <motion.div
+              key="delbranch"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0, transition: { duration: 0.2 } }}
+              exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
+            >
+              <DeleteBranchPanel
+                branchName={deleteBranchName}
+                onNameChange={setDeleteBranchName}
+                onDelete={handleDeleteBranch}
                 running={running}
                 disabled={!selectedProject}
               />

@@ -62,6 +62,17 @@ switch ($action) {
         Write-Host "=== Hotfix $version deletado ===" -ForegroundColor Magenta
     }
 
+    "delete-branch" {
+        if (-not $branchName) {
+            Write-Host "Erro: informe o nome completo do branch." -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "=== Deletando branch local '$branchName'... ===" -ForegroundColor Magenta
+        git branch -D $branchName
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Write-Host "=== Branch '$branchName' deletado com sucesso! ===" -ForegroundColor Green
+    }
+
     "new-branch" {
         if (-not $branchType) {
             Write-Host "Erro: tipo do branch e obrigatorio." -ForegroundColor Red
