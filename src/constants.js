@@ -1,7 +1,6 @@
 export const BASE_PATH = 'C:\\Users\\ViniciusSoaresdeSant\\Desktop\\Fretefy\\Front'
 
 export const PROJECTS = [
-  'fretefy-front',
 ]
 
 export const BRANCH_TYPES = ['sustentacao', 'manutencao', 'votorantim', 'vcmonitoramento']

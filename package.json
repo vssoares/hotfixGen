@@ -1,11 +1,11 @@
 {
   "name": "projectManager",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Git Flow Hotfix Manager",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "build": "vite build && electron-packager . ProjectManager --platform=win32 --arch=x64 --out=release --overwrite --prune=true",
+    "build": "vite build && electron-builder --win",
     "start": "electron ."
   },
   "dependencies": {
