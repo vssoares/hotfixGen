@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(find /c/Users/ViniciusSoaresdeSant/Desktop/ProjectManager -not -path */node_modules/* -not -path */dist/* -not -path */.git/* -type f)"
+    ]
+  }
+}
