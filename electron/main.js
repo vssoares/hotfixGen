@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
 
@@ -82,6 +82,12 @@ ipcMain.handle('run-command', (event, { action, version, projectPath, branchType
   })
 
   return { ok: true }
+})
+
+ipcMain.handle('dialog:open-folder', async () => {
+  const result = await dialog.showOpenDialog({ properties: ['openDirectory'] })
+  if (result.canceled) return null
+  return result.filePaths[0]
 })
 
 ipcMain.handle('open-gitk', (_event, { projectPath }) => {

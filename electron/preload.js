@@ -13,6 +13,9 @@ contextBridge.exposeInMainWorld('api', {
   onDone: (callback) =>
     ipcRenderer.on('ps:done', (_event, code) => callback(code)),
 
+  selectFolder: () =>
+    ipcRenderer.invoke('dialog:open-folder'),
+
   openGitk: (projectPath) =>
     ipcRenderer.invoke('open-gitk', { projectPath }),
 

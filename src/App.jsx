@@ -13,6 +13,9 @@ export default function App() {
     const saved = localStorage.getItem('theme')
     return saved !== null ? saved === 'dark' : true
   })
+  const [customProjects, setCustomProjects] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('customProjects') ?? '[]') } catch { return [] }
+  })
   const [selectedProject, setSelectedProject] = useState(null)
   const [selectedAction, setSelectedAction] = useState(null)
   const [version, setVersion] = useState('')
@@ -26,6 +29,27 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('theme', dark ? 'dark' : 'light')
   }, [dark])
+
+  useEffect(() => {
+    localStorage.setItem('customProjects', JSON.stringify(customProjects))
+  }, [customProjects])
+
+  const defaultProjects = PROJECTS.map(p => ({ name: p, path: `${BASE_PATH}\\${p}`, isCustom: false }))
+  const allProjects = [...defaultProjects, ...customProjects.map(p => ({ ...p, isCustom: true }))]
+
+  function getProjectPath(name) {
+    return allProjects.find(p => p.name === name)?.path ?? `${BASE_PATH}\\${name}`
+  }
+
+  function handleAddProject({ name, path }) {
+    if (allProjects.some(p => p.name === name)) return
+    setCustomProjects(prev => [...prev, { name, path }])
+  }
+
+  function handleRemoveProject(name) {
+    if (selectedProject === name) setSelectedProject(null)
+    setCustomProjects(prev => prev.filter(p => p.name !== name))
+  }
 
   const branchPreview = branchUs.trim()
     ? `feature/${branchType}-${branchUs.trim()}-${branchName.trim()}`
@@ -67,7 +91,7 @@ export default function App() {
 
   async function handleExecute() {
     if (!selectedProject || !selectedAction || !version.trim() || running) return
-    const projectPath = `${BASE_PATH}\\${selectedProject}`
+    const projectPath = getProjectPath(selectedProject)
     setLines([{ text: `> [${selectedProject}] hf ${selectedAction} ${version.trim()}`, type: 'system' }])
     setupListeners()
     await window.api.run(selectedAction, version.trim(), projectPath)
@@ -75,14 +99,14 @@ export default function App() {
 
   async function handleOpenGitk() {
     if (!selectedProject || running) return
-    const projectPath = `${BASE_PATH}\\${selectedProject}`
+    const projectPath = getProjectPath(selectedProject)
     setLines(prev => [...prev, { text: `> [${selectedProject}] gitk master`, type: 'system' }])
     await window.api.openGitk(projectPath)
   }
 
   async function handleCreateBranch() {
     if (!selectedProject || !branchName.trim() || running) return
-    const projectPath = `${BASE_PATH}\\${selectedProject}`
+    const projectPath = getProjectPath(selectedProject)
     setLines([{ text: `> [${selectedProject}] criar branch: ${branchPreview}`, type: 'system' }])
     setupListeners()
     await window.api.run('new-branch', '', projectPath, {
@@ -97,9 +121,11 @@ export default function App() {
       <Header dark={dark} onToggleTheme={() => setDark(d => !d)} />
 
       <ProjectSelector
-        projects={PROJECTS}
+        projects={allProjects}
         selected={selectedProject}
         onSelect={handleProjectClick}
+        onAdd={handleAddProject}
+        onRemove={handleRemoveProject}
         disabled={running}
       />
 

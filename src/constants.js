@@ -1,10 +1,6 @@
 export const BASE_PATH = 'C:\\Users\\ViniciusSoaresdeSant\\Desktop\\Fretefy\\Front'
 
 export const PROJECTS = [
-  'ffy-firulis',
-  'ffy-portal',
-  'ffy-portal-agendamento',
-  'fretefy-ci-new-design',
   'fretefy-front',
 ]
 
