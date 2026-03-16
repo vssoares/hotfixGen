@@ -1,6 +1,6 @@
 {
   "name": "projectManager",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Git Flow Hotfix Manager",
   "main": "electron/main.js",
   "scripts": {

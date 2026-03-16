@@ -3,7 +3,7 @@ const path = require('path')
 const { spawn } = require('child_process')
 const { autoUpdater } = require('electron-updater')
 
-autoUpdater.autoDownload = true
+autoUpdater.autoDownload = false
 autoUpdater.autoInstallOnAppQuit = true
 
 let mainWindow = null
@@ -84,6 +84,10 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+ipcMain.handle('update:download', () => {
+  autoUpdater.downloadUpdate()
 })
 
 ipcMain.handle('update:install', () => {
