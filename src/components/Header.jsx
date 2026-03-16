@@ -4,6 +4,7 @@ export default function Header({ dark, onToggleTheme }) {
   const [updateState, setUpdateState] = useState(null) // null | 'checking' | 'available' | 'downloading' | 'ready' | 'error'
   const [updateVersion, setUpdateVersion] = useState('')
   const [progress, setProgress] = useState(0)
+  const [updateError, setUpdateError] = useState('')
 
   useEffect(() => {
     if (!window.api?.update) return
@@ -13,7 +14,7 @@ export default function Header({ dark, onToggleTheme }) {
     window.api.update.onNotAvailable(()  => setUpdateState(null))
     window.api.update.onProgress((pct)   => { setUpdateState('downloading'); setProgress(pct) })
     window.api.update.onDownloaded(()    => setUpdateState('ready'))
-    window.api.update.onError(()         => setUpdateState(null))
+    window.api.update.onError((msg)      => { setUpdateState('error'); setUpdateError(msg) })
   }, [])
 
   return (
@@ -42,7 +43,13 @@ export default function Header({ dark, onToggleTheme }) {
           </span>
           <button
             className="text-[10px] tracking-widest uppercase border border-blue-500 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white px-2 py-0.5 transition-colors cursor-pointer"
-            onClick={() => window.api.update.download()}
+            onClick={() => {
+              setUpdateState('downloading')
+              window.api.update.download().catch(err => {
+                setUpdateState('error')
+                setUpdateError(err?.message || 'falha ao iniciar download')
+              })
+            }}
           >
             baixar
           </button>
@@ -59,6 +66,20 @@ export default function Header({ dark, onToggleTheme }) {
             />
           </div>
           <span className="text-[10px] tracking-widest text-blue-500 dark:text-blue-400 uppercase w-8 text-right">{progress}%</span>
+        </div>
+      )}
+
+      {updateState === 'error' && (
+        <div className="flex items-center justify-between border border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-sm">
+          <span className="text-[10px] tracking-widest text-red-600 dark:text-red-400 uppercase truncate">
+            ✗ erro: {updateError || 'falha ao atualizar'}
+          </span>
+          <button
+            className="text-[10px] tracking-widest uppercase border border-red-400 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white px-2 py-0.5 transition-colors cursor-pointer shrink-0 ml-2"
+            onClick={() => { setUpdateState(null); setUpdateError('') }}
+          >
+            fechar
+          </button>
         </div>
       )}
 
