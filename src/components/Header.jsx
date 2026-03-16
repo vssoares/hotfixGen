@@ -1,4 +1,11 @@
 import { useState, useEffect } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+
+const banner = {
+  initial: { opacity: 0, y: -6 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+  exit:    { opacity: 0, y: -6, transition: { duration: 0.15 } },
+}
 
 export default function Header({ dark, onToggleTheme }) {
   const [updateState, setUpdateState] = useState(null) // null | 'checking' | 'available' | 'downloading' | 'ready' | 'error'
@@ -36,66 +43,76 @@ export default function Header({ dark, onToggleTheme }) {
         </div>
       </header>
 
-      {updateState === 'available' && (
-        <div className="flex items-center justify-between border border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-sm">
-          <span className="text-[10px] tracking-widest text-blue-600 dark:text-blue-400 uppercase">
-            ↓ nova versão {updateVersion} disponível
-          </span>
-          <button
-            className="text-[10px] tracking-widest uppercase border border-blue-500 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white px-2 py-0.5 transition-colors cursor-pointer"
-            onClick={() => {
-              setUpdateState('downloading')
-              window.api.update.download().catch(err => {
-                setUpdateState('error')
-                setUpdateError(err?.message || 'falha ao iniciar download')
-              })
-            }}
+      <AnimatePresence mode="wait">
+        {updateState === 'available' && (
+          <motion.div key="available" {...banner}
+            className="flex items-center justify-between border border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-sm"
           >
-            baixar
-          </button>
-        </div>
-      )}
+            <span className="text-[10px] tracking-widest text-blue-600 dark:text-blue-400 uppercase">
+              ↓ nova versão {updateVersion} disponível
+            </span>
+            <button
+              className="text-[10px] tracking-widest uppercase border border-blue-500 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white px-2 py-0.5 transition-colors cursor-pointer"
+              onClick={() => {
+                setUpdateState('downloading')
+                window.api.update.download().catch(err => {
+                  setUpdateState('error')
+                  setUpdateError(err?.message || 'falha ao iniciar download')
+                })
+              }}
+            >
+              baixar
+            </button>
+          </motion.div>
+        )}
 
-      {updateState === 'downloading' && (
-        <div className="flex items-center gap-2 border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 rounded-sm">
-          <span className="text-[10px] tracking-widest text-zinc-500 dark:text-zinc-400 uppercase shrink-0">baixando...</span>
-          <div className="flex-1 h-[2px] bg-zinc-200 dark:bg-zinc-800">
-            <div
-              className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <span className="text-[10px] tracking-widest text-blue-500 dark:text-blue-400 uppercase w-8 text-right">{progress}%</span>
-        </div>
-      )}
-
-      {updateState === 'error' && (
-        <div className="flex items-center justify-between border border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-sm">
-          <span className="text-[10px] tracking-widest text-red-600 dark:text-red-400 uppercase truncate">
-            ✗ erro: {updateError || 'falha ao atualizar'}
-          </span>
-          <button
-            className="text-[10px] tracking-widest uppercase border border-red-400 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white px-2 py-0.5 transition-colors cursor-pointer shrink-0 ml-2"
-            onClick={() => { setUpdateState(null); setUpdateError('') }}
+        {updateState === 'downloading' && (
+          <motion.div key="downloading" {...banner}
+            className="flex items-center gap-2 border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 rounded-sm"
           >
-            fechar
-          </button>
-        </div>
-      )}
+            <span className="text-[10px] tracking-widest text-zinc-500 dark:text-zinc-400 uppercase shrink-0">baixando...</span>
+            <div className="flex-1 h-[2px] bg-zinc-200 dark:bg-zinc-800">
+              <div
+                className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="text-[10px] tracking-widest text-blue-500 dark:text-blue-400 uppercase w-8 text-right">{progress}%</span>
+          </motion.div>
+        )}
 
-      {updateState === 'ready' && (
-        <div className="flex items-center justify-between border border-green-500 dark:border-green-700 bg-green-50 dark:bg-green-950/40 px-3 py-1.5 rounded-sm">
-          <span className="text-[10px] tracking-widest text-green-600 dark:text-green-400 uppercase">
-            ✓ atualização pronta para instalar
-          </span>
-          <button
-            className="text-[10px] tracking-widest uppercase border border-green-500 dark:border-green-600 text-green-600 dark:text-green-400 hover:bg-green-500 hover:text-white dark:hover:bg-green-600 dark:hover:text-white px-2 py-0.5 transition-colors cursor-pointer"
-            onClick={() => window.api.update.install()}
+        {updateState === 'error' && (
+          <motion.div key="error" {...banner}
+            className="flex items-center justify-between border border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-sm"
           >
-            reiniciar e instalar
-          </button>
-        </div>
-      )}
+            <span className="text-[10px] tracking-widest text-red-600 dark:text-red-400 uppercase truncate">
+              ✗ erro: {updateError || 'falha ao atualizar'}
+            </span>
+            <button
+              className="text-[10px] tracking-widest uppercase border border-red-400 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white px-2 py-0.5 transition-colors cursor-pointer shrink-0 ml-2"
+              onClick={() => { setUpdateState(null); setUpdateError('') }}
+            >
+              fechar
+            </button>
+          </motion.div>
+        )}
+
+        {updateState === 'ready' && (
+          <motion.div key="ready" {...banner}
+            className="flex items-center justify-between border border-green-500 dark:border-green-700 bg-green-50 dark:bg-green-950/40 px-3 py-1.5 rounded-sm"
+          >
+            <span className="text-[10px] tracking-widest text-green-600 dark:text-green-400 uppercase">
+              ✓ atualização pronta para instalar
+            </span>
+            <button
+              className="text-[10px] tracking-widest uppercase border border-green-500 dark:border-green-600 text-green-600 dark:text-green-400 hover:bg-green-500 hover:text-white dark:hover:bg-green-600 dark:hover:text-white px-2 py-0.5 transition-colors cursor-pointer"
+              onClick={() => window.api.update.install()}
+            >
+              reiniciar e instalar
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

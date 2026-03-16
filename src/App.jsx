@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { BASE_PATH, PROJECTS, BRANCH_TYPES, ACTIONS } from './constants'
 import Header from './components/Header'
 import ProjectSelector from './components/ProjectSelector'
@@ -147,34 +148,50 @@ export default function App() {
           )}
         </div>
 
-        {mode === 'hotfix' && (
-          <HotfixPanel
-            actions={ACTIONS}
-            selectedAction={selectedAction}
-            onActionClick={handleActionClick}
-            version={version}
-            onVersionChange={setVersion}
-            onExecute={handleExecute}
-            running={running}
-            disabled={!selectedProject}
-          />
-        )}
+        <AnimatePresence mode="wait">
+          {mode === 'hotfix' && (
+            <motion.div
+              key="hotfix"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0, transition: { duration: 0.2 } }}
+              exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
+            >
+              <HotfixPanel
+                actions={ACTIONS}
+                selectedAction={selectedAction}
+                onActionClick={handleActionClick}
+                version={version}
+                onVersionChange={setVersion}
+                onExecute={handleExecute}
+                running={running}
+                disabled={!selectedProject}
+              />
+            </motion.div>
+          )}
 
-        {mode === 'newbranch' && (
-          <NewBranchPanel
-            branchTypes={BRANCH_TYPES}
-            branchType={branchType}
-            onTypeChange={setBranchType}
-            branchUs={branchUs}
-            onUsChange={setBranchUs}
-            branchName={branchName}
-            onNameChange={setBranchName}
-            branchPreview={branchPreview}
-            onCreateBranch={handleCreateBranch}
-            running={running}
-            disabled={!selectedProject}
-          />
-        )}
+          {mode === 'newbranch' && (
+            <motion.div
+              key="newbranch"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0, transition: { duration: 0.2 } }}
+              exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
+            >
+              <NewBranchPanel
+                branchTypes={BRANCH_TYPES}
+                branchType={branchType}
+                onTypeChange={setBranchType}
+                branchUs={branchUs}
+                onUsChange={setBranchUs}
+                branchName={branchName}
+                onNameChange={setBranchName}
+                branchPreview={branchPreview}
+                onCreateBranch={handleCreateBranch}
+                running={running}
+                disabled={!selectedProject}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <ConsoleOutput
