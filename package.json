@@ -1,0 +1,49 @@
+{
+  "name": "projectManager",
+  "version": "1.0.0",
+  "description": "Git Flow Hotfix Manager",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "vite build && electron-packager . ProjectManager --platform=win32 --arch=x64 --out=release --overwrite --prune=true",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.4.4",
+    "@tailwindcss/vite": "^4.2.1",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.27",
+    "concurrently": "^9.0.1",
+    "cross-env": "^10.1.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.1",
+    "vite": "^5.4.8",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.projectManager.app",
+    "productName": "ProjectManager",
+    "asar": false,
+    "win": {
+      "target": "nsis",
+      "icon": "task-management.png"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "task-management.png"
+    ],
+    "extraResources": [
+      {
+        "from": "hf.ps1",
+        "to": "hf.ps1"
+      }
+    ]
+  }
+}
