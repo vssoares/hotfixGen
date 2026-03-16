@@ -12,11 +12,14 @@ export default function DeleteBranchPanel({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <label className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 uppercase tracking-widest">// nome completo do branch</label>
+        <label htmlFor="del-branch-name" className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 uppercase tracking-widest">// nome completo do branch</label>
         <div className="flex gap-2">
           <div className="relative flex-1 flex items-center">
-            <span className="absolute left-3 text-red-500 dark:text-red-700 text-sm select-none">›</span>
+            <span className="absolute left-3 text-red-500 dark:text-red-700 text-sm select-none" aria-hidden="true">›</span>
             <input
+              id="del-branch-name"
+              name="del-branch-name"
+              autoComplete="off"
               type="text"
               placeholder="feature/sustentacao-17433-relatorios"
               value={branchName}

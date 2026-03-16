@@ -81,6 +81,8 @@ export default function App() {
 
   async function handleDeleteBranch() {
     if (!selectedProject || !deleteBranchName.trim() || running) return
+    const confirmed = window.confirm(`Deletar branch local "${deleteBranchName.trim()}"?\n\nEsta ação não pode ser desfeita.`)
+    if (!confirmed) return
     const projectPath = getProjectPath(selectedProject)
     setLines([{ text: `> [${selectedProject}] git branch -D ${deleteBranchName.trim()}`, type: 'system' }])
     setupListeners()
