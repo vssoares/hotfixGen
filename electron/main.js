@@ -1,6 +1,12 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
+const { autoUpdater } = require('electron-updater')
+
+autoUpdater.autoDownload = true
+autoUpdater.autoInstallOnAppQuit = true
+
+let mainWindow = null
 
 function getScriptPath() {
   if (app.isPackaged) {
@@ -9,12 +15,38 @@ function getScriptPath() {
   return path.join(__dirname, '..', 'hf.ps1')
 }
 
+function setupAutoUpdater() {
+  autoUpdater.on('checking-for-update', () => {
+    mainWindow?.webContents.send('update:checking')
+  })
+
+  autoUpdater.on('update-available', (info) => {
+    mainWindow?.webContents.send('update:available', info.version)
+  })
+
+  autoUpdater.on('update-not-available', () => {
+    mainWindow?.webContents.send('update:not-available')
+  })
+
+  autoUpdater.on('download-progress', (progress) => {
+    mainWindow?.webContents.send('update:progress', Math.floor(progress.percent))
+  })
+
+  autoUpdater.on('update-downloaded', () => {
+    mainWindow?.webContents.send('update:downloaded')
+  })
+
+  autoUpdater.on('error', (err) => {
+    mainWindow?.webContents.send('update:error', err.message)
+  })
+}
+
 function createWindow() {
   const iconPath = app.isPackaged
     ? path.join(app.getAppPath(), 'task-management.png')
     : path.join(__dirname, '..', 'task-management.png')
 
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 900,
     resizable: true,
@@ -29,14 +61,21 @@ function createWindow() {
   const isDev = !app.isPackaged
 
   if (isDev) {
-    win.loadURL('http://localhost:5173')
+    mainWindow.loadURL('http://localhost:5173')
   } else {
-    win.loadFile(path.join(__dirname, '../dist/index.html'))
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
+
+  mainWindow.on('closed', () => { mainWindow = null })
 }
 
 app.whenReady().then(() => {
+  setupAutoUpdater()
   createWindow()
+
+  if (app.isPackaged) {
+    setTimeout(() => autoUpdater.checkForUpdates(), 3000)
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -45,6 +84,10 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+ipcMain.handle('update:install', () => {
+  autoUpdater.quitAndInstall()
 })
 
 ipcMain.handle('run-command', (event, { action, version, projectPath, branchType, branchUs, branchName }) => {
