@@ -182,6 +182,10 @@ export default function App() {
         running={running}
         onClear={() => setLines([])}
       />
+
+      <footer className="flex justify-end">
+        <span className="text-[10px] text-zinc-400 dark:text-zinc-600 font-mono tracking-widest">v{__APP_VERSION__}</span>
+      </footer>
     </div>
   )
 }
