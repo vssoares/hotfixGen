@@ -1,6 +1,6 @@
 {
   "name": "projectManager",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Git Flow Hotfix Manager",
   "main": "electron/main.js",
   "scripts": {
@@ -47,11 +47,6 @@
       "electron/**/*",
       "task-management.png"
     ],
-    "extraResources": [
-      {
-        "from": "hf.ps1",
-        "to": "hf.ps1"
-      }
-    ]
+    "extraResources": []
   }
 }

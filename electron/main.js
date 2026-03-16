@@ -1,18 +1,23 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
+const fs = require('fs')
+const os = require('os')
 const { spawn } = require('child_process')
 const { autoUpdater } = require('electron-updater')
+const HF_SCRIPT = require('./hfScript')
 
 autoUpdater.autoDownload = false
 autoUpdater.autoInstallOnAppQuit = true
 
 let mainWindow = null
+let scriptPath = null
 
 function getScriptPath() {
-  if (app.isPackaged) {
-    return path.join(app.getAppPath(), 'hf.ps1')
-  }
-  return path.join(__dirname, '..', 'hf.ps1')
+  if (scriptPath) return scriptPath
+  const tmpPath = path.join(os.tmpdir(), 'hf_projectmanager.ps1')
+  fs.writeFileSync(tmpPath, HF_SCRIPT, 'utf8')
+  scriptPath = tmpPath
+  return scriptPath
 }
 
 function setupAutoUpdater() {
