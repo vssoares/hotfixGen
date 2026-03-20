@@ -61,7 +61,7 @@ async fn run_command(
 
     let app_clone = app.clone();
 
-    tokio::task::spawn_blocking(move || {
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         let mut child = Command::new("powershell.exe")
             .args(&args)
             .current_dir(&project_path)
@@ -110,12 +110,10 @@ async fn run_command(
         let code = status.code().unwrap_or(-1);
         let _ = app_clone.emit("ps:done", code);
 
-        Ok::<(), String>(())
+        Ok(())
     })
     .await
-    .map_err(|e| e.to_string())??;
-
-    Ok(())
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -139,7 +137,7 @@ async fn open_gitk(project_path: String) -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_updater::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![run_command, open_gitk])
         .run(tauri::generate_context!())

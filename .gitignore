@@ -6,18 +6,21 @@ dist/
 release/
 out/
 
-# Tauri
+# Tauri - build artifacts
 src-tauri/target/
 src-tauri/gen/
 
-# Bundles (gerados pelo tauri build)
-*.dmg
-*.exe
-*.deb
-*.rpm
-*.AppImage
-*.snap
-*.msi
+# Tauri - ícones gerados para Android e iOS (gerados via `tauri icon`)
+src-tauri/icons/android/
+src-tauri/icons/ios/
+
+# Bundles gerados pelo `tauri build`
+src-tauri/target/release/bundle/
+
+# Variáveis de ambiente de signing do Tauri (NUNCA commitar)
+.tauri-signing-key
+*.key
+*.pem
 
 # Vite
 .vite/
