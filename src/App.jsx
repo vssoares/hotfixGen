@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import { BASE_PATH, PROJECTS, BRANCH_TYPES, ACTIONS } from './constants'
 import Header from './components/Header'
 import ProjectSelector from './components/ProjectSelector'
@@ -29,6 +31,8 @@ export default function App() {
   const [lines, setLines] = useState([])
   const [running, setRunning] = useState(false)
 
+  const unlistenersRef = useRef([])
+
   useEffect(() => {
     localStorage.setItem('theme', dark ? 'dark' : 'light')
   }, [dark])
@@ -36,6 +40,12 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('customProjects', JSON.stringify(customProjects))
   }, [customProjects])
+
+  useEffect(() => {
+    return () => {
+      unlistenersRef.current.forEach(fn => fn())
+    }
+  }, [])
 
   const defaultProjects = PROJECTS.map(p => ({ name: p, path: `${BASE_PATH}\\${p}`, isCustom: false }))
   const allProjects = [...defaultProjects, ...customProjects.map(p => ({ ...p, isCustom: true }))]
@@ -58,16 +68,26 @@ export default function App() {
     ? `feature/${branchType}-${branchUs.trim()}-${branchName.trim()}`
     : `feature/${branchType}-${branchName.trim()}`
 
-  function setupListeners() {
-    window.api.removeListeners()
+  async function setupListeners() {
+    unlistenersRef.current.forEach(fn => fn())
+    unlistenersRef.current = []
+
     setRunning(true)
-    window.api.onOut(data => setLines(prev => [...prev, { text: data.trimEnd(), type: 'out' }]))
-    window.api.onErr(data => setLines(prev => [...prev, { text: data.trimEnd(), type: 'err' }]))
-    window.api.onDone(code => {
+
+    const ul1 = await listen('ps:out', (event) =>
+      setLines(prev => [...prev, { text: event.payload.trimEnd(), type: 'out' }])
+    )
+    const ul2 = await listen('ps:err', (event) =>
+      setLines(prev => [...prev, { text: event.payload.trimEnd(), type: 'err' }])
+    )
+    const ul3 = await listen('ps:done', (event) => {
+      const code = event.payload
       const msg = code === 0 ? '✓ Concluído (código 0)' : `✗ Encerrado com código ${code}`
       setLines(prev => [...prev, { text: msg, type: 'system' }])
       setRunning(false)
     })
+
+    unlistenersRef.current = [ul1, ul2, ul3]
   }
 
   function handleModeSwitch(newMode) {
@@ -81,10 +101,15 @@ export default function App() {
 
   async function handleDeleteBranch() {
     if (!selectedProject || !deleteBranchName.trim() || running) return
+    const confirmed = window.confirm(`Deletar branch local "${deleteBranchName.trim()}"?\n\nEsta ação não pode ser desfeita.`)
+    if (!confirmed) return
     const projectPath = getProjectPath(selectedProject)
     setLines([{ text: `> [${selectedProject}] git branch -D ${deleteBranchName.trim()}`, type: 'system' }])
-    setupListeners()
-    await window.api.run('delete-branch', '', projectPath, {
+    await setupListeners()
+    await invoke('run_command', {
+      action: 'delete-branch',
+      version: '',
+      projectPath,
       branchName: deleteBranchName.trim(),
     })
   }
@@ -106,23 +131,26 @@ export default function App() {
     if (!selectedProject || !selectedAction || !version.trim() || running) return
     const projectPath = getProjectPath(selectedProject)
     setLines([{ text: `> [${selectedProject}] hf ${selectedAction} ${version.trim()}`, type: 'system' }])
-    setupListeners()
-    await window.api.run(selectedAction, version.trim(), projectPath)
+    await setupListeners()
+    await invoke('run_command', { action: selectedAction, version: version.trim(), projectPath })
   }
 
   async function handleOpenGitk() {
     if (!selectedProject || running) return
     const projectPath = getProjectPath(selectedProject)
     setLines(prev => [...prev, { text: `> [${selectedProject}] gitk master`, type: 'system' }])
-    await window.api.openGitk(projectPath)
+    await invoke('open_gitk', { projectPath })
   }
 
   async function handleCreateBranch() {
     if (!selectedProject || !branchName.trim() || running) return
     const projectPath = getProjectPath(selectedProject)
     setLines([{ text: `> [${selectedProject}] criar branch: ${branchPreview}`, type: 'system' }])
-    setupListeners()
-    await window.api.run('new-branch', '', projectPath, {
+    await setupListeners()
+    await invoke('run_command', {
+      action: 'new-branch',
+      version: '',
+      projectPath,
       branchType,
       branchUs: branchUs.trim(),
       branchName: branchName.trim(),

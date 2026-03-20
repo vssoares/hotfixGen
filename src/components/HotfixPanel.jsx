@@ -33,11 +33,14 @@ export default function HotfixPanel({
 
       {selectedAction && (
         <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 font-semibold uppercase tracking-widest">// versão</label>
+          <label htmlFor="hotfix-version" className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 font-semibold uppercase tracking-widest">// versão</label>
           <div className="flex gap-2">
             <div className="relative flex-1 flex items-center">
-              <span className="absolute left-3 text-amber-500 dark:text-amber-700 text-sm select-none">›</span>
+              <span className="absolute left-3 text-amber-500 dark:text-amber-700 text-sm select-none" aria-hidden="true">›</span>
               <input
+                id="hotfix-version"
+                name="hotfix-version"
+                autoComplete="off"
                 type="text"
                 placeholder="3.13.4"
                 value={version}

@@ -31,7 +31,7 @@ export default function ConsoleOutput({ lines, running, onClear }) {
           </Button>
         )}
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-black border border-zinc-200 dark:border-zinc-900 rounded-sm p-4 font-mono text-[12px] leading-relaxed">
+      <div className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-black border border-zinc-200 dark:border-zinc-900 rounded-sm p-4 font-mono text-[12px] leading-relaxed" aria-live="polite" aria-atomic="false">
         {lines.length === 0 ? (
           <span className="text-zinc-400 dark:text-zinc-500 italic">awaiting input...</span>
         ) : (

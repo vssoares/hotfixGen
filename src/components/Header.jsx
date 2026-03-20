@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { check } from '@tauri-apps/plugin-updater'
+import { relaunch } from '@tauri-apps/plugin-process'
+
+const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const banner = {
-  initial: { opacity: 0, y: -6 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.2 } },
-  exit:    { opacity: 0, y: -6, transition: { duration: 0.15 } },
+  initial: { opacity: 0, y: prefersReduced ? 0 : -6 },
+  animate: { opacity: 1, y: 0, transition: { duration: prefersReduced ? 0 : 0.2 } },
+  exit:    { opacity: 0, y: prefersReduced ? 0 : -6, transition: { duration: prefersReduced ? 0 : 0.15 } },
 }
 
 export default function Header({ dark, onToggleTheme }) {
@@ -12,17 +16,66 @@ export default function Header({ dark, onToggleTheme }) {
   const [updateVersion, setUpdateVersion] = useState('')
   const [progress, setProgress] = useState(0)
   const [updateError, setUpdateError] = useState('')
+  const [pendingUpdate, setPendingUpdate] = useState(null)
 
   useEffect(() => {
-    if (!window.api?.update) return
+    async function checkForUpdates() {
+      try {
+        setUpdateState('checking')
+        const update = await check()
+        if (update?.available) {
+          setUpdateState('available')
+          setUpdateVersion(update.version)
+          setPendingUpdate(update)
+        } else {
+          setUpdateState(null)
+        }
+      } catch {
+        setUpdateState(null)
+      }
+    }
 
-    window.api.update.onChecking(()      => setUpdateState('checking'))
-    window.api.update.onAvailable((ver)  => { setUpdateState('available'); setUpdateVersion(ver) })
-    window.api.update.onNotAvailable(()  => setUpdateState(null))
-    window.api.update.onProgress((pct)   => { setUpdateState('downloading'); setProgress(pct) })
-    window.api.update.onDownloaded(()    => setUpdateState('ready'))
-    window.api.update.onError((msg)      => { setUpdateState('error'); setUpdateError(msg) })
+    if (typeof window.__TAURI_INTERNALS__ !== 'undefined') {
+      setTimeout(checkForUpdates, 3000)
+    }
   }, [])
+
+  async function handleDownload() {
+    if (!pendingUpdate) return
+    setUpdateState('downloading')
+    setProgress(0)
+
+    let downloaded = 0
+    let total = 0
+
+    try {
+      await pendingUpdate.downloadAndInstall((event) => {
+        if (event.event === 'Started') {
+          total = event.data.contentLength ?? 0
+        } else if (event.event === 'Progress') {
+          downloaded += event.data.chunkLength
+          if (total > 0) {
+            setProgress(Math.floor((downloaded / total) * 100))
+          }
+        } else if (event.event === 'Finished') {
+          setProgress(100)
+        }
+      })
+      setUpdateState('ready')
+    } catch (err) {
+      setUpdateState('error')
+      setUpdateError(err?.message || 'falha ao baixar atualização')
+    }
+  }
+
+  async function handleInstall() {
+    try {
+      await relaunch()
+    } catch (err) {
+      setUpdateState('error')
+      setUpdateError(err?.message || 'falha ao reiniciar')
+    }
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -30,89 +83,86 @@ export default function Header({ dark, onToggleTheme }) {
         <div className="flex items-center gap-2">
           <span className="text-zinc-500 dark:text-zinc-400 text-xs font-medium">~/dev$</span>
           <h1 className="text-base font-bold text-amber-600 dark:text-amber-400 tracking-widest uppercase">projectManager</h1>
-          <span className="cursor-blink inline-block w-[7px] h-[14px] bg-amber-600 dark:bg-amber-400 align-middle" />
+          <span className="cursor-blink inline-block w-[7px] h-[14px] bg-amber-600 dark:bg-amber-400 align-middle" aria-hidden="true" />
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleTheme}
-            className="text-[10px] tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors uppercase border border-zinc-300 dark:border-zinc-700 px-2 py-0.5 rounded-sm font-medium"
+            aria-label={dark ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+            className="text-[10px] tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors uppercase border border-zinc-300 dark:border-zinc-700 px-2 py-0.5 rounded-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
           >
-            {dark ? '☀ light' : '◐ dark'}
+            <span aria-hidden="true">{dark ? '☀ light' : '◐ dark'}</span>
           </button>
           <span className="text-[10px] text-zinc-500 dark:text-zinc-400 tracking-widest font-medium">// git-flow manager</span>
         </div>
       </header>
 
-      <AnimatePresence mode="wait">
-        {updateState === 'available' && (
-          <motion.div key="available" {...banner}
-            className="flex items-center justify-between border border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-sm"
-          >
-            <span className="text-[10px] tracking-widest text-blue-600 dark:text-blue-400 uppercase">
-              ↓ nova versão {updateVersion} disponível
-            </span>
-            <button
-              className="text-[10px] tracking-widest uppercase border border-blue-500 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white px-2 py-0.5 transition-colors cursor-pointer"
-              onClick={() => {
-                setUpdateState('downloading')
-                window.api.update.download().catch(err => {
-                  setUpdateState('error')
-                  setUpdateError(err?.message || 'falha ao iniciar download')
-                })
-              }}
+      <div aria-live="polite" aria-atomic="true">
+        <AnimatePresence mode="wait">
+          {updateState === 'available' && (
+            <motion.div key="available" {...banner}
+              className="flex items-center justify-between border border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-sm"
             >
-              baixar
-            </button>
-          </motion.div>
-        )}
+              <span className="text-[10px] tracking-widest text-blue-600 dark:text-blue-400 uppercase">
+                <span aria-hidden="true">↓ </span>nova versão {updateVersion} disponível
+              </span>
+              <button
+                className="text-[10px] tracking-widest uppercase border border-blue-500 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white px-2 py-0.5 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
+                onClick={handleDownload}
+              >
+                baixar
+              </button>
+            </motion.div>
+          )}
 
-        {updateState === 'downloading' && (
-          <motion.div key="downloading" {...banner}
-            className="flex items-center gap-2 border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 rounded-sm"
-          >
-            <span className="text-[10px] tracking-widest text-zinc-500 dark:text-zinc-400 uppercase shrink-0">baixando...</span>
-            <div className="flex-1 h-[2px] bg-zinc-200 dark:bg-zinc-800">
-              <div
-                className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <span className="text-[10px] tracking-widest text-blue-500 dark:text-blue-400 uppercase w-8 text-right">{progress}%</span>
-          </motion.div>
-        )}
-
-        {updateState === 'error' && (
-          <motion.div key="error" {...banner}
-            className="flex items-center justify-between border border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-sm"
-          >
-            <span className="text-[10px] tracking-widest text-red-600 dark:text-red-400 uppercase truncate">
-              ✗ erro: {updateError || 'falha ao atualizar'}
-            </span>
-            <button
-              className="text-[10px] tracking-widest uppercase border border-red-400 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white px-2 py-0.5 transition-colors cursor-pointer shrink-0 ml-2"
-              onClick={() => { setUpdateState(null); setUpdateError('') }}
+          {updateState === 'downloading' && (
+            <motion.div key="downloading" {...banner}
+              className="flex items-center gap-2 border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 rounded-sm"
             >
-              fechar
-            </button>
-          </motion.div>
-        )}
+              <span className="text-[10px] tracking-widest text-zinc-500 dark:text-zinc-400 uppercase shrink-0">baixando...</span>
+              <div className="flex-1 h-[2px] bg-zinc-200 dark:bg-zinc-800" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso do download">
+                <div
+                  className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="text-[10px] tracking-widest text-blue-500 dark:text-blue-400 uppercase w-8 text-right" aria-hidden="true">{progress}%</span>
+            </motion.div>
+          )}
 
-        {updateState === 'ready' && (
-          <motion.div key="ready" {...banner}
-            className="flex items-center justify-between border border-green-500 dark:border-green-700 bg-green-50 dark:bg-green-950/40 px-3 py-1.5 rounded-sm"
-          >
-            <span className="text-[10px] tracking-widest text-green-600 dark:text-green-400 uppercase">
-              ✓ atualização pronta para instalar
-            </span>
-            <button
-              className="text-[10px] tracking-widest uppercase border border-green-500 dark:border-green-600 text-green-600 dark:text-green-400 hover:bg-green-500 hover:text-white dark:hover:bg-green-600 dark:hover:text-white px-2 py-0.5 transition-colors cursor-pointer"
-              onClick={() => window.api.update.install()}
+          {updateState === 'error' && (
+            <motion.div key="error" {...banner}
+              className="flex items-center justify-between border border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-sm"
             >
-              reiniciar e instalar
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <span className="text-[10px] tracking-widest text-red-600 dark:text-red-400 uppercase truncate">
+                <span aria-hidden="true">✗ </span>erro: {updateError || 'falha ao atualizar'}
+              </span>
+              <button
+                className="text-[10px] tracking-widest uppercase border border-red-400 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white px-2 py-0.5 transition-colors cursor-pointer shrink-0 ml-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-500"
+                onClick={() => { setUpdateState(null); setUpdateError('') }}
+              >
+                fechar
+              </button>
+            </motion.div>
+          )}
+
+          {updateState === 'ready' && (
+            <motion.div key="ready" {...banner}
+              className="flex items-center justify-between border border-green-500 dark:border-green-700 bg-green-50 dark:bg-green-950/40 px-3 py-1.5 rounded-sm"
+            >
+              <span className="text-[10px] tracking-widest text-green-600 dark:text-green-400 uppercase">
+                <span aria-hidden="true">✓ </span>atualização pronta para instalar
+              </span>
+              <button
+                className="text-[10px] tracking-widest uppercase border border-green-500 dark:border-green-600 text-green-600 dark:text-green-400 hover:bg-green-500 hover:text-white dark:hover:bg-green-600 dark:hover:text-white px-2 py-0.5 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-green-500"
+                onClick={handleInstall}
+              >
+                reiniciar e instalar
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   )
 }

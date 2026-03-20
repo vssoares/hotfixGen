@@ -1,52 +1,29 @@
 {
   "name": "projectManager",
-  "version": "1.0.10",
+  "version": "1.1.0",
   "description": "Git Flow Hotfix Manager",
-  "main": "electron/main.js",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "build": "vite build && electron-builder --win",
-    "start": "electron ."
+    "dev": "tauri dev",
+    "dev:vite": "vite",
+    "build": "tauri build",
+    "build:vite": "vite build"
   },
   "dependencies": {
-    "electron-updater": "^6.8.3",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2",
+    "@tauri-apps/plugin-process": "^2",
+    "@tauri-apps/plugin-updater": "^2",
     "framer-motion": "^12.37.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@electron/packager": "^18.4.4",
+    "@tauri-apps/cli": "^2",
     "@tailwindcss/vite": "^4.2.1",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.27",
-    "concurrently": "^9.0.1",
-    "cross-env": "^10.1.0",
-    "electron": "^33.0.0",
-    "electron-builder": "^25.1.8",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1",
-    "vite": "^5.4.8",
-    "wait-on": "^8.0.1"
-  },
-  "build": {
-    "appId": "com.projectManager.app",
-    "productName": "ProjectManager",
-    "asar": false,
-    "win": {
-      "target": "nsis",
-      "icon": "task-management.png",
-      "artifactName": "${productName}.Setup.${version}.${ext}"
-    },
-    "publish": {
-      "provider": "github",
-      "owner": "vssoares",
-      "repo": "hotfixGen"
-    },
-    "files": [
-      "dist/**/*",
-      "electron/**/*",
-      "task-management.png"
-    ],
-    "extraResources": []
+    "vite": "^5.4.8"
   }
 }

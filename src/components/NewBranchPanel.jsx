@@ -39,8 +39,11 @@ export default function NewBranchPanel({
 
       <div className="flex gap-2">
         <div className="flex flex-col gap-1.5 w-36">
-          <label className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 font-semibold uppercase tracking-widest">// cód. US</label>
+          <label htmlFor="branch-us" className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 font-semibold uppercase tracking-widest">// cód. US</label>
           <input
+            id="branch-us"
+            name="branch-us"
+            autoComplete="off"
             type="text"
             placeholder="17433"
             value={branchUs}
@@ -50,8 +53,11 @@ export default function NewBranchPanel({
           />
         </div>
         <div className="flex flex-col gap-1.5 flex-1">
-          <label className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 font-semibold uppercase tracking-widest">// nome *</label>
+          <label htmlFor="branch-name" className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 font-semibold uppercase tracking-widest">// nome *</label>
           <input
+            id="branch-name"
+            name="branch-name"
+            autoComplete="off"
             type="text"
             placeholder="relatorios-agendamento"
             value={branchName}

@@ -27,9 +27,9 @@ export default function ProjectSelector({ projects, selected, onSelect, onAdd, o
                 <button
                   className="absolute -top-1.5 -right-1.5 hidden group-hover:flex items-center justify-center w-3.5 h-3.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-red-500 hover:text-white transition-colors text-[8px] leading-none cursor-pointer"
                   onClick={() => onRemove(project.name)}
-                  title="Remover projeto"
+                  aria-label={`Remover projeto ${project.name}`}
                 >
-                  ✕
+                  <span aria-hidden="true">✕</span>
                 </button>
               )}
             </div>
@@ -39,9 +39,9 @@ export default function ProjectSelector({ projects, selected, onSelect, onAdd, o
             className="cursor-pointer px-3 py-1.5 border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600 hover:border-amber-400 dark:hover:border-amber-600 hover:text-amber-500 dark:hover:text-amber-500 text-xs rounded-sm transition-colors duration-100"
             onClick={() => setShowModal(true)}
             disabled={disabled}
-            title="Adicionar projeto"
+            aria-label="Adicionar projeto"
           >
-            +
+            <span aria-hidden="true">+</span>
           </button>
         </div>
       </div>
