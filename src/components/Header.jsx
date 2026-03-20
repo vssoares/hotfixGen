@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { check } from '@tauri-apps/plugin-updater'
+import { relaunch } from '@tauri-apps/plugin-process'
 
 const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -14,17 +16,66 @@ export default function Header({ dark, onToggleTheme }) {
   const [updateVersion, setUpdateVersion] = useState('')
   const [progress, setProgress] = useState(0)
   const [updateError, setUpdateError] = useState('')
+  const [pendingUpdate, setPendingUpdate] = useState(null)
 
   useEffect(() => {
-    if (!window.api?.update) return
+    async function checkForUpdates() {
+      try {
+        setUpdateState('checking')
+        const update = await check()
+        if (update?.available) {
+          setUpdateState('available')
+          setUpdateVersion(update.version)
+          setPendingUpdate(update)
+        } else {
+          setUpdateState(null)
+        }
+      } catch {
+        setUpdateState(null)
+      }
+    }
 
-    window.api.update.onChecking(()      => setUpdateState('checking'))
-    window.api.update.onAvailable((ver)  => { setUpdateState('available'); setUpdateVersion(ver) })
-    window.api.update.onNotAvailable(()  => setUpdateState(null))
-    window.api.update.onProgress((pct)   => { setUpdateState('downloading'); setProgress(pct) })
-    window.api.update.onDownloaded(()    => setUpdateState('ready'))
-    window.api.update.onError((msg)      => { setUpdateState('error'); setUpdateError(msg) })
+    if (typeof window.__TAURI_INTERNALS__ !== 'undefined') {
+      setTimeout(checkForUpdates, 3000)
+    }
   }, [])
+
+  async function handleDownload() {
+    if (!pendingUpdate) return
+    setUpdateState('downloading')
+    setProgress(0)
+
+    let downloaded = 0
+    let total = 0
+
+    try {
+      await pendingUpdate.downloadAndInstall((event) => {
+        if (event.event === 'Started') {
+          total = event.data.contentLength ?? 0
+        } else if (event.event === 'Progress') {
+          downloaded += event.data.chunkLength
+          if (total > 0) {
+            setProgress(Math.floor((downloaded / total) * 100))
+          }
+        } else if (event.event === 'Finished') {
+          setProgress(100)
+        }
+      })
+      setUpdateState('ready')
+    } catch (err) {
+      setUpdateState('error')
+      setUpdateError(err?.message || 'falha ao baixar atualização')
+    }
+  }
+
+  async function handleInstall() {
+    try {
+      await relaunch()
+    } catch (err) {
+      setUpdateState('error')
+      setUpdateError(err?.message || 'falha ao reiniciar')
+    }
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -57,13 +108,7 @@ export default function Header({ dark, onToggleTheme }) {
               </span>
               <button
                 className="text-[10px] tracking-widest uppercase border border-blue-500 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white px-2 py-0.5 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
-                onClick={() => {
-                  setUpdateState('downloading')
-                  window.api.update.download().catch(err => {
-                    setUpdateState('error')
-                    setUpdateError(err?.message || 'falha ao iniciar download')
-                  })
-                }}
+                onClick={handleDownload}
               >
                 baixar
               </button>
@@ -110,7 +155,7 @@ export default function Header({ dark, onToggleTheme }) {
               </span>
               <button
                 className="text-[10px] tracking-widest uppercase border border-green-500 dark:border-green-600 text-green-600 dark:text-green-400 hover:bg-green-500 hover:text-white dark:hover:bg-green-600 dark:hover:text-white px-2 py-0.5 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-green-500"
-                onClick={() => window.api.update.install()}
+                onClick={handleInstall}
               >
                 reiniciar e instalar
               </button>

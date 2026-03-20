@@ -10,11 +10,18 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(version)
   },
-  base: './',
+  clearScreen: false,
   server: {
-    port: 5173
+    port: 5173,
+    strictPort: true,
+    watch: {
+      ignored: ['**/src-tauri/**']
+    }
   },
   build: {
-    outDir: 'dist'
+    outDir: 'dist',
+    target: ['es2021', 'chrome100', 'safari13'],
+    minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
+    sourcemap: !!process.env.TAURI_DEBUG
   }
 })

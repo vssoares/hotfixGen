@@ -6,13 +6,18 @@ dist/
 release/
 out/
 
-# Electron packager
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Bundles (gerados pelo tauri build)
 *.dmg
 *.exe
 *.deb
 *.rpm
 *.AppImage
 *.snap
+*.msi
 
 # Vite
 .vite/

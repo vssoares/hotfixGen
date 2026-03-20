@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { open } from '@tauri-apps/plugin-dialog'
 import Button from './Button'
 
 export default function AddProjectModal({ onAdd, onClose }) {
@@ -6,7 +7,7 @@ export default function AddProjectModal({ onAdd, onClose }) {
   const [folderPath, setFolderPath] = useState('')
 
   async function handleBrowse() {
-    const selected = await window.api.selectFolder()
+    const selected = await open({ directory: true, multiple: false })
     if (!selected) return
     setFolderPath(selected)
     if (!name.trim()) {
