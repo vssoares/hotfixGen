@@ -5,6 +5,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# --- Verificar chave de assinatura ---
+if (-not $env:TAURI_SIGNING_PRIVATE_KEY) {
+    Write-Error "TAURI_SIGNING_PRIVATE_KEY nao definida. O .sig nao sera gerado e o updater nao vai funcionar.`nSete antes de rodar: `$env:TAURI_SIGNING_PRIVATE_KEY = '...'"
+    exit 1
+}
+
 # --- Versoes ---
 Write-Host "--- Atualizando versao para $version ---" -ForegroundColor Cyan
 
@@ -34,16 +40,30 @@ git push origin main
 # --- Build local ---
 Write-Host "--- Buildando localmente ---" -ForegroundColor Cyan
 npm run build
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Build falhou (exit code $LASTEXITCODE)"
+    exit 1
+}
 
 # --- Artefatos ---
 $bundleDir = "src-tauri/target/release/bundle/nsis"
-$exe = Get-ChildItem "$bundleDir/*.exe" | Where-Object { $_.Name -notlike "*.sig*" } | Select-Object -First 1
-$sig = Get-Item "$($exe.FullName).sig"
+if (-not (Test-Path $bundleDir)) {
+    Write-Error "Pasta de bundle nao encontrada: $bundleDir"
+    exit 1
+}
 
+$exe = Get-ChildItem "$bundleDir/*.exe" | Where-Object { $_.Name -notlike "*.sig*" } | Select-Object -First 1
 if (-not $exe) {
     Write-Error "Instalador nao encontrado em $bundleDir"
     exit 1
 }
+
+$sigPath = "$($exe.FullName).sig"
+if (-not (Test-Path $sigPath)) {
+    Write-Error "Arquivo .sig nao encontrado. Verifique se TAURI_SIGNING_PRIVATE_KEY esta correta."
+    exit 1
+}
+$sig = Get-Item $sigPath
 
 Write-Host "Artefato: $($exe.Name)" -ForegroundColor Gray
 
