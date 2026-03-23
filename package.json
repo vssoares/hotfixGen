@@ -1,6 +1,6 @@
 {
   "name": "projectManager",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Git Flow Hotfix Manager",
   "scripts": {
     "dev": "tauri dev",
