@@ -3,7 +3,14 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(npm run:*)",
-      "Bash(find /c/Users/ViniciusSoaresdeSant/Desktop/ProjectManager -not -path */node_modules/* -not -path */dist/* -not -path */.git/* -type f)"
+      "Bash(find /c/Users/ViniciusSoaresdeSant/Desktop/ProjectManager -not -path */node_modules/* -not -path */dist/* -not -path */.git/* -type f)",
+      "Bash(cargo --version)",
+      "Bash(rustc --version)",
+      "Bash(echo \"PATH: $PATH\")",
+      "Read(//c/Users/ViniciusSoaresdeSant/.rustup/**)",
+      "Read(//c/Program Files/**)",
+      "Bash(export PATH=\"$HOME/.cargo/bin:$PATH\")",
+      "Bash(wc:*)"
     ]
   }
 }

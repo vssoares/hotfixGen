@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { BASE_PATH, PROJECTS, BRANCH_TYPES, ACTIONS } from './constants'
 import Header from './components/Header'
+import UpdateOverlay from './components/UpdateOverlay'
 import ProjectSelector from './components/ProjectSelector'
 import ModeTabs from './components/ModeTabs'
 import HotfixPanel from './components/HotfixPanel'
@@ -30,6 +31,7 @@ export default function App() {
   const [deleteBranchName, setDeleteBranchName] = useState('')
   const [lines, setLines] = useState([])
   const [running, setRunning] = useState(false)
+  const [updateInfo, setUpdateInfo] = useState(null) // null | { version, progress, status }
 
   const unlistenersRef = useRef([])
 
@@ -159,7 +161,8 @@ export default function App() {
 
   return (
     <div data-theme={dark ? 'dark' : 'light'} className="scanlines flex flex-col h-screen bg-zinc-50 text-zinc-800 dark:bg-[#0a0a0a] dark:text-zinc-100 p-6 gap-4 select-none">
-      <Header dark={dark} onToggleTheme={() => setDark(d => !d)} />
+      {updateInfo && <UpdateOverlay {...updateInfo} />}
+      <Header dark={dark} onToggleTheme={() => setDark(d => !d)} setUpdateInfo={setUpdateInfo} />
 
       <ProjectSelector
         projects={allProjects}

@@ -4,6 +4,12 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use tauri::{AppHandle, Emitter};
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 const HF_SCRIPT: &str = include_str!("../../hf.ps1");
 
 fn ensure_script() -> Result<PathBuf, std::io::Error> {
@@ -62,13 +68,17 @@ async fn run_command(
     let app_clone = app.clone();
 
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
-        let mut child = Command::new("powershell.exe")
-            .args(&args)
+        #[allow(unused_mut)]
+        let mut cmd = Command::new("powershell.exe");
+        cmd.args(&args)
             .current_dir(&project_path)
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| e.to_string())?;
+            .stderr(Stdio::piped());
+
+        #[cfg(target_os = "windows")]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+
+        let mut child = cmd.spawn().map_err(|e| e.to_string())?;
 
         let mut stdout = child.stdout.take().unwrap();
         let mut stderr = child.stderr.take().unwrap();
@@ -118,17 +128,17 @@ async fn run_command(
 
 #[tauri::command]
 async fn open_gitk(project_path: String) -> Result<(), String> {
-    Command::new("git")
-        .args(["fetch", "--all"])
-        .current_dir(&project_path)
-        .output()
-        .map_err(|e| e.to_string())?;
+    let mut git_cmd = Command::new("git");
+    git_cmd.args(["fetch", "--all"]).current_dir(&project_path);
+    #[cfg(target_os = "windows")]
+    git_cmd.creation_flags(CREATE_NO_WINDOW);
+    git_cmd.output().map_err(|e| e.to_string())?;
 
-    Command::new("gitk")
-        .arg("master")
-        .current_dir(&project_path)
-        .spawn()
-        .map_err(|e| e.to_string())?;
+    let mut gitk_cmd = Command::new("gitk");
+    gitk_cmd.arg("master").current_dir(&project_path);
+    #[cfg(target_os = "windows")]
+    gitk_cmd.creation_flags(CREATE_NO_WINDOW);
+    gitk_cmd.spawn().map_err(|e| e.to_string())?;
 
     Ok(())
 }
