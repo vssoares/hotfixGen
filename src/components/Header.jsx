@@ -13,42 +13,57 @@ const banner = {
 
 export default function Header({ dark, onToggleTheme, setUpdateInfo }) {
   const [updateError, setUpdateError] = useState('')
+  const [pendingUpdate, setPendingUpdate] = useState(null) // { version, update }
+  const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
-    async function checkAndUpdate() {
+    async function checkForUpdate() {
       try {
         const update = await check()
         if (!update?.available) return
-
-        setUpdateInfo({ version: update.version, progress: 0, status: 'downloading' })
-
-        let downloaded = 0
-        let total = 0
-
-        await update.downloadAndInstall((event) => {
-          if (event.event === 'Started') {
-            total = event.data.contentLength ?? 0
-          } else if (event.event === 'Progress') {
-            downloaded += event.data.chunkLength
-            if (total > 0) {
-              setUpdateInfo(prev => ({ ...prev, progress: Math.floor((downloaded / total) * 100) }))
-            }
-          } else if (event.event === 'Finished') {
-            setUpdateInfo(prev => ({ ...prev, progress: 100, status: 'installing' }))
-          }
-        })
-
-        await relaunch()
-      } catch (err) {
-        setUpdateInfo(null)
-        setUpdateError(err?.message || 'falha ao atualizar')
+        setPendingUpdate({ version: update.version, update })
+      } catch {
+        // silently ignore check errors
       }
     }
 
     if (typeof window.__TAURI_INTERNALS__ !== 'undefined') {
-      setTimeout(checkAndUpdate, 3000)
+      setTimeout(checkForUpdate, 3000)
     }
   }, [])
+
+  async function handleUpdate() {
+    if (!pendingUpdate || isUpdating) return
+    const { update, version } = pendingUpdate
+    setIsUpdating(true)
+    setPendingUpdate(null)
+
+    try {
+      setUpdateInfo({ version, progress: 0, status: 'downloading' })
+
+      let downloaded = 0
+      let total = 0
+
+      await update.downloadAndInstall((event) => {
+        if (event.event === 'Started') {
+          total = event.data.contentLength ?? 0
+        } else if (event.event === 'Progress') {
+          downloaded += event.data.chunkLength
+          if (total > 0) {
+            setUpdateInfo(prev => ({ ...prev, progress: Math.floor((downloaded / total) * 100) }))
+          }
+        } else if (event.event === 'Finished') {
+          setUpdateInfo(prev => ({ ...prev, progress: 100, status: 'installing' }))
+        }
+      })
+
+      await relaunch()
+    } catch (err) {
+      setUpdateInfo(null)
+      setIsUpdating(false)
+      setUpdateError(err?.message || 'falha ao atualizar')
+    }
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -71,6 +86,22 @@ export default function Header({ dark, onToggleTheme, setUpdateInfo }) {
       </header>
 
       <AnimatePresence>
+        {pendingUpdate && (
+          <motion.div key="update-available" {...banner}
+            className="flex items-center justify-between border border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 rounded-sm"
+          >
+            <span className="text-[10px] tracking-widest text-amber-700 dark:text-amber-400 uppercase truncate font-mono">
+              <span aria-hidden="true">↑ </span>atualização disponível → v{pendingUpdate.version}
+            </span>
+            <button
+              disabled={isUpdating}
+              onClick={handleUpdate}
+              className="text-[10px] tracking-widest uppercase border border-amber-500 dark:border-amber-500 text-amber-700 dark:text-amber-400 hover:bg-amber-500 hover:text-white disabled:opacity-60 disabled:cursor-not-allowed px-2 py-0.5 transition-colors cursor-pointer shrink-0 ml-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+            >
+              {isUpdating ? 'atualizando...' : 'atualizar'}
+            </button>
+          </motion.div>
+        )}
         {updateError && (
           <motion.div key="error" {...banner}
             className="flex items-center justify-between border border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-sm"
