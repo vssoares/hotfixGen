@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { isTauri } from '@tauri-apps/api/core'
 import { check } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
 
@@ -20,14 +21,15 @@ export default function Header({ dark, onToggleTheme, setUpdateInfo }) {
     async function checkForUpdate() {
       try {
         const update = await check()
-        if (!update?.available) return
+        if (!update) return
         setPendingUpdate({ version: update.version, update })
-      } catch {
-        // silently ignore check errors
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        setUpdateError(msg ? `verificação: ${msg}` : 'verificação de atualização falhou')
       }
     }
 
-    if (typeof window.__TAURI_INTERNALS__ !== 'undefined') {
+    if (isTauri()) {
       setTimeout(checkForUpdate, 3000)
     }
   }, [])
