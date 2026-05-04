@@ -5,9 +5,36 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# --- Verificar Node.js ---
+try {
+    $nodeVersionRaw = (& node -v) 2>$null
+} catch {
+    Write-Error "Node.js nao encontrado no PATH. Instale Node 18+ e tente novamente."
+    exit 1
+}
+
+if (-not $nodeVersionRaw) {
+    Write-Error "Falha ao obter versao do Node.js. Instale Node 18+ e tente novamente."
+    exit 1
+}
+
+$nodeMajor = [int](($nodeVersionRaw.TrimStart("v").Split(".")[0]))
+if ($nodeMajor -lt 18) {
+    Write-Error "Node.js $nodeVersionRaw detectado. Este projeto requer Node 18+ (Vite 5 / Tauri 2). Atualize o Node e rode novamente."
+    exit 1
+}
+
 # --- Verificar chave de assinatura ---
 if (-not $env:TAURI_SIGNING_PRIVATE_KEY) {
     Write-Error "TAURI_SIGNING_PRIVATE_KEY nao definida. O .sig nao sera gerado e o updater nao vai funcionar.`nSete antes de rodar: `$env:TAURI_SIGNING_PRIVATE_KEY = '...'"
+    exit 1
+}
+
+# --- Verificar GitHub CLI ---
+try {
+    $ghVersion = (& gh --version) 2>$null
+} catch {
+    Write-Error "GitHub CLI (gh) nao encontrado no PATH. Instale e autentique (gh auth login) antes de rodar."
     exit 1
 }
 
