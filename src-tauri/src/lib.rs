@@ -126,13 +126,25 @@ async fn run_command(
     .map_err(|e| e.to_string())?
 }
 
+fn git_output(project_path: &str, args: &[&str]) -> Result<std::process::Output, String> {
+    let mut cmd = Command::new("git");
+    cmd.args(args).current_dir(project_path);
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    cmd.output().map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 async fn open_gitk(project_path: String) -> Result<(), String> {
-    let mut git_cmd = Command::new("git");
-    git_cmd.args(["fetch", "--all"]).current_dir(&project_path);
-    #[cfg(target_os = "windows")]
-    git_cmd.creation_flags(CREATE_NO_WINDOW);
-    git_cmd.output().map_err(|e| e.to_string())?;
+    let checkout = git_output(&project_path, &["checkout", "master"])?;
+    if !checkout.status.success() {
+        return Err(String::from_utf8_lossy(&checkout.stderr).trim().to_string());
+    }
+
+    let pull = git_output(&project_path, &["pull", "origin", "master"])?;
+    if !pull.status.success() {
+        return Err(String::from_utf8_lossy(&pull.stderr).trim().to_string());
+    }
 
     let mut gitk_cmd = Command::new("gitk");
     gitk_cmd.arg("master").current_dir(&project_path);

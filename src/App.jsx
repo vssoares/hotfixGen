@@ -140,8 +140,17 @@ export default function App() {
   async function handleOpenGitk() {
     if (!selectedProject || running) return
     const projectPath = getProjectPath(selectedProject)
-    setLines(prev => [...prev, { text: `> [${selectedProject}] gitk master`, type: 'system' }])
-    await invoke('open_gitk', { projectPath })
+    setLines(prev => [
+      ...prev,
+      { text: `> [${selectedProject}] git checkout master`, type: 'system' },
+      { text: `> [${selectedProject}] git pull origin master`, type: 'system' },
+      { text: `> [${selectedProject}] gitk master`, type: 'system' },
+    ])
+    try {
+      await invoke('open_gitk', { projectPath })
+    } catch (e) {
+      setLines(prev => [...prev, { text: String(e), type: 'err' }])
+    }
   }
 
   async function handleCreateBranch() {
