@@ -1,6 +1,6 @@
 {
   "name": "projectManager",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "Git Flow Hotfix Manager",
   "engines": {
     "node": ">=18.0.0"
