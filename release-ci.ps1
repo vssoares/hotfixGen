@@ -71,9 +71,9 @@ Set-JsonVersion "package.json" $version
 Set-JsonVersion "src-tauri/tauri.conf.json" $version
 Set-CargoTomlVersion "src-tauri/Cargo.toml" $version
 
-# --- Commit e push ---
+# --- Commit e push: inclui todas as alteracoes no repo (git add .; respeita .gitignore) ---
 git status --porcelain | Out-Host
-git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
+git add .
 git commit -m "chore: release v$version"
 git push origin $branch
 
