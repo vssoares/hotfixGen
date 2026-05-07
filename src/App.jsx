@@ -29,6 +29,7 @@ export default function App() {
   const [branchUs, setBranchUs] = useState('')
   const [branchName, setBranchName] = useState('')
   const [deleteBranchName, setDeleteBranchName] = useState('')
+  const [forceHotfixDelete, setForceHotfixDelete] = useState(false)
   const [lines, setLines] = useState([])
   const [running, setRunning] = useState(false)
   const [updateInfo, setUpdateInfo] = useState(null) // null | { version, progress, status }
@@ -127,14 +128,21 @@ export default function App() {
     if (running || !selectedProject) return
     setSelectedAction(prev => (prev === id ? null : id))
     setVersion('')
+    if (id !== 'delete') setForceHotfixDelete(false)
   }
 
   async function handleExecute() {
     if (!selectedProject || !selectedAction || !version.trim() || running) return
     const projectPath = getProjectPath(selectedProject)
-    setLines([{ text: `> [${selectedProject}] hf ${selectedAction} ${version.trim()}`, type: 'system' }])
+    const forceFlag = selectedAction === 'delete' && forceHotfixDelete ? ' -f' : ''
+    setLines([{ text: `> [${selectedProject}] hf ${selectedAction} ${version.trim()}${forceFlag}`, type: 'system' }])
     await setupListeners()
-    await invoke('run_command', { action: selectedAction, version: version.trim(), projectPath })
+    await invoke('run_command', {
+      action: selectedAction,
+      version: version.trim(),
+      projectPath,
+      force: selectedAction === 'delete' ? forceHotfixDelete : false,
+    })
   }
 
   async function handleOpenGitk() {
@@ -214,6 +222,8 @@ export default function App() {
                 onActionClick={handleActionClick}
                 version={version}
                 onVersionChange={setVersion}
+                forceDelete={forceHotfixDelete}
+                onForceDeleteChange={setForceHotfixDelete}
                 onExecute={handleExecute}
                 running={running}
                 disabled={!selectedProject}

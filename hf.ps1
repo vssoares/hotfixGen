@@ -3,7 +3,8 @@ param(
     [string]$version,
     [string]$branchType,
     [string]$branchUs,
-    [string]$branchName
+    [string]$branchName,
+    [switch]$force
 )
 
 if (-not $action) {
@@ -57,7 +58,11 @@ switch ($action) {
         }
         Update-MainBranches
         Write-Host "=== Deletando hotfix $version... ===" -ForegroundColor Magenta
-        git flow hotfix delete $version
+        if ($force) {
+            git flow hotfix delete $version -f
+        } else {
+            git flow hotfix delete $version
+        }
         Write-Host "=== Hotfix $version deletado ===" -ForegroundColor Magenta
     }
 

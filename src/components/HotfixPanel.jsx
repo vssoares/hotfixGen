@@ -8,6 +8,8 @@ export default function HotfixPanel({
   onActionClick,
   version,
   onVersionChange,
+  forceDelete,
+  onForceDeleteChange,
   onExecute,
   running,
   disabled,
@@ -60,6 +62,19 @@ export default function HotfixPanel({
               {running ? 'running...' : 'executar'}
             </Button>
           </div>
+
+          {selectedAction === 'delete' && (
+            <label className="flex items-center gap-2 text-[10px] tracking-widest uppercase text-zinc-600 dark:text-zinc-300 select-none">
+              <input
+                type="checkbox"
+                checked={!!forceDelete}
+                onChange={e => onForceDeleteChange?.(e.target.checked)}
+                disabled={running}
+                className="accent-red-600"
+              />
+              forçar (-f)
+            </label>
+          )}
         </div>
       )}
     </div>

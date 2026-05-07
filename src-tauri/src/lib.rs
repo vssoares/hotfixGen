@@ -27,6 +27,7 @@ async fn run_command(
     branch_type: Option<String>,
     branch_us: Option<String>,
     branch_name: Option<String>,
+    force: Option<bool>,
 ) -> Result<(), String> {
     let script_path = ensure_script().map_err(|e| e.to_string())?;
 
@@ -63,6 +64,9 @@ async fn run_command(
             args.push("-branchName".to_string());
             args.push(bn);
         }
+    }
+    if force.unwrap_or(false) {
+        args.push("-force".to_string());
     }
 
     let app_clone = app.clone();
